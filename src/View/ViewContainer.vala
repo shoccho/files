@@ -107,7 +107,6 @@ namespace Marlin.View {
 
         public bool is_loading {get; private set; default = false;}
 
-        private Marlin.View.OverlayBar overlay_statusbar;
         private Browser browser;
         private GLib.List<GLib.File>? selected_locations = null;
 
@@ -259,8 +258,6 @@ namespace Marlin.View {
                 this.view = new Slot (loc, this, mode);
             }
 
-            overlay_statusbar = new Marlin.View.OverlayBar (view.overlay);
-
             connect_slot_signals (this.view);
             directory_is_loading (loc);
             slot.initialize_directory ();
@@ -354,8 +351,6 @@ namespace Marlin.View {
         }
 
         private void directory_is_loading (GLib.File loc) {
-            overlay_statusbar.cancel ();
-            overlay_statusbar.halign = Gtk.Align.END;
             refresh_slot_info (loc);
 
             can_show_folder = false;
@@ -385,7 +380,6 @@ namespace Marlin.View {
             }
 
             this.tab_name = tab_name;
-            overlay_statusbar.hide ();
         }
 
 
@@ -454,7 +448,6 @@ namespace Marlin.View {
             }
 
             loading (false); /* Will cause topmenu to update */
-            overlay_statusbar.update_hovered (null); /* Prevent empty statusbar showing */
         }
 
         private void store_selection () {
@@ -587,7 +580,6 @@ namespace Marlin.View {
         }
 
         private void on_slot_selection_changed (GLib.List<unowned GOF.File> files) {
-            overlay_statusbar.selection_changed (files);
         }
 
         private bool on_button_press_event (Gdk.EventButton event) {

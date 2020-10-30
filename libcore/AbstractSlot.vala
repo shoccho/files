@@ -55,7 +55,6 @@ namespace GOF {
         protected Gtk.Box extra_location_widgets;
         protected Gtk.Box extra_action_widgets;
         protected Gtk.Box content_box;
-        public Gtk.Overlay overlay {get; protected set;}
         protected int slot_number;
         protected int width;
 
@@ -75,9 +74,7 @@ namespace GOF {
         }
 
         public void add_overlay (Gtk.Widget widget) {
-            overlay = new Gtk.Overlay ();
-            content_box.pack_start (overlay, true, true, 0);
-            overlay.add (widget);
+            content_box.pack_start (widget, true, true, 0);
         }
 
         construct {
