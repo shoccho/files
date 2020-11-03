@@ -580,6 +580,7 @@ namespace Marlin.View {
         }
 
         private void on_slot_selection_changed (GLib.List<unowned GOF.File> files) {
+            window.selection_changed (files);
         }
 
         private bool on_button_press_event (Gdk.EventButton event) {

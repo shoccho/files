@@ -285,7 +285,9 @@ public class PropertiesWindow : AbstractPropertiesDialog {
                 mutex.unlock ();
 
                 selected_folders++;
-                var d = new Marlin.DeepCount (gof.location); /* Starts counting on creation */
+                List<File> files = null;
+                files.prepend (gof.location.dup ());
+                var d = new Marlin.DeepCount (files); /* Starts counting on creation */
                 deep_count_directories.prepend (d);
 
                 d.finished.connect (() => {

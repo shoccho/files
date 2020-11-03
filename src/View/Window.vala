@@ -58,7 +58,9 @@ namespace Marlin.View {
         public Chrome.ViewSwitcher view_switcher;
         public Granite.Widgets.DynamicNotebook tabs;
         private Gtk.Paned lside_pane;
+        private Gtk.Paned rside_pane;
         public Marlin.Sidebar sidebar;
+        public PropertiesSidebar properties_sidebar;
         public ViewContainer? current_tab = null;
 
         private bool tabs_restored = false;
@@ -164,10 +166,22 @@ namespace Marlin.View {
                 position = Marlin.app_settings.get_int ("sidebar-width")
             };
             lside_pane.pack1 (sidebar, false, false);
-            lside_pane.pack2 (tabs, true, true);
+
+            properties_sidebar = new PropertiesSidebar () {
+                width_request = 200
+            };
+
+            rside_pane = new Gtk.Paned (Gtk.Orientation.HORIZONTAL) {
+                expand = true
+            };
+
+            rside_pane.pack1 (tabs, true, true);
+            rside_pane.pack2 (properties_sidebar, false, false);
+
+            lside_pane.pack2 (rside_pane, true, true);
 
             var grid = new Gtk.Grid ();
-            grid.attach (top_menu, 0, 0);
+            grid.attach (top_menu, 0, 0, 2, 1);
             grid.attach (lside_pane, 0, 1);
             grid.show_all ();
 
@@ -1152,6 +1166,11 @@ namespace Marlin.View {
 
         public new void grab_focus () {
             current_tab.grab_focus ();
+        }
+
+        public void selection_changed (List<unowned GOF.File> files) {
+warning ("%u files selected", files.length ());
+            properties_sidebar.selection_changed (files);
         }
 
         private void set_accelerators () {

@@ -19,7 +19,7 @@
 
 public class Marlin.DeepCount : Object {
 
-    private File file;
+    private List<File> files;
     private string deep_count_attrs;
     private Cancellable cancellable;
     private List<File>? directories = null;
@@ -32,15 +32,26 @@ public class Marlin.DeepCount : Object {
 
     public signal void finished ();
 
-    public DeepCount (File _file) {
-        file = _file;
+    construct {
+        files = null;
+    }
+
+    public DeepCount (List<File> _files) {
+//~         file = _file;
+        foreach (File file in _files) {
+            files.prepend (file);
+        }
+
         deep_count_attrs = string.join (",",
                                         FileAttribute.STANDARD_NAME,
                                         FileAttribute.STANDARD_TYPE,
                                         FileAttribute.STANDARD_SIZE,
                                         FileAttribute.STANDARD_ALLOCATED_SIZE);
         cancellable = new Cancellable ();
-        process_directory.begin (file);
+
+        foreach (File file in files) {
+            process_directory.begin (file);
+        }
     }
 
     private Mutex mutex;
