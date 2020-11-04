@@ -1086,6 +1086,59 @@ namespace PF.FileUtils {
             return (int) long.min (max_path - (dir.length + 1), max_name);
         }
     }
+
+    /* Fills in the width and height properties of goffile */
+    public async void load_image_resolution (GOF.File goffile, Cancellable? cancellable) {
+        GLib.FileInputStream? stream = null;
+        GLib.File file = goffile.location;
+
+        goffile.width = -1;
+        goffile.height = -1;
+
+        try {
+            stream = yield file.read_async (0, cancellable);
+            if (stream == null) {
+                error ("Could not read image file's size data");
+            } else {
+                var pixbuf = yield new Gdk.Pixbuf.from_stream_async (stream, cancellable);
+                if (pixbuf != null && goffile != null) {
+                    goffile.width = pixbuf.get_width ();
+                    goffile.height = pixbuf.get_height ();
+                }
+            }
+        } catch (Error e) {
+            warning ("Error loading image resolution in PropertiesWindow: %s", e.message);
+        }
+        try {
+            stream.close ();
+        } catch (GLib.Error e) {
+            debug ("Error closing stream in get_resolution: %s", e.message);
+        }
+    }
+
+    public uint64 file_real_size (GOF.File gof) {
+        if (!gof.is_connected) {
+            return 0;
+        }
+
+        uint64 file_size = gof.size;
+        if (gof.location is GLib.File) {
+            try {
+                var info = gof.location.query_info (FileAttribute.STANDARD_ALLOCATED_SIZE, FileQueryInfoFlags.NONE);
+                uint64 allocated_size = info.get_attribute_uint64 (FileAttribute.STANDARD_ALLOCATED_SIZE);
+                /* Check for sparse file, allocated size will be smaller, for normal files allocated size
+                 * includes overhead size so we don't use it for those here
+                 */
+                if (allocated_size > 0 && allocated_size < file_size && !gof.is_directory) {
+                    file_size = allocated_size;
+                }
+            } catch (Error err) {
+                debug ("%s", err.message);
+                gof.is_connected = false;
+            }
+        }
+        return file_size;
+    }
 }
 
 namespace Marlin {

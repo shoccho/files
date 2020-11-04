@@ -1169,7 +1169,6 @@ namespace Marlin.View {
         }
 
         public void selection_changed (List<unowned GOF.File> files) {
-warning ("%u files selected", files.length ());
             properties_sidebar.selection_changed (files);
         }
 

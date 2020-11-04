@@ -73,8 +73,6 @@ namespace Marlin {
 
     public const int16 DEFAULT_POPUP_MENU_DISPLACEMENT = 2;
 
-    public const string[] SKIP_IMAGES = {"image/svg+xml", "image/tiff", "image/jp2"};
-
     public string protocol_to_name (string protocol) {
         /* Deal with protocol with or without : or / characters at the end */
         string s = protocol.delimit (":/", ' ').chomp ();

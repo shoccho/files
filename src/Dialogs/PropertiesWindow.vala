@@ -311,7 +311,7 @@ public class PropertiesWindow : AbstractPropertiesDialog {
             }
 
             mutex.lock ();
-            total_size += PropertiesWindow.file_real_size (gof);
+            total_size += PF.FileUtils.file_real_size (gof);
             mutex.unlock ();
         }
 
@@ -460,7 +460,16 @@ public class PropertiesWindow : AbstractPropertiesDialog {
             return goffile.width.to_string () + " × " + goffile.height.to_string () + " px";
         } else {
             /* Async function will update info when resolution determined */
-            get_resolution.begin (file);
+            PF.FileUtils.load_image_resolution.begin (file,
+                                  null,
+                                  (obj, res) => {
+                if (goffile.width <= 0) {
+                    resolution_value.label = _("Image size could not be determined");
+                } else {
+                    resolution_value.label = _("%i x %i px").printf (goffile.width, goffile.height);
+                }
+            });
+
             return _("Loading…");
         }
     }
@@ -490,33 +499,6 @@ public class PropertiesWindow : AbstractPropertiesDialog {
             }
         }
         return _("Unknown");
-    }
-
-    private async void get_resolution (GOF.File goffile) {
-        GLib.FileInputStream? stream = null;
-        GLib.File file = goffile.location;
-        string resolution = _("Could not be determined");
-
-        try {
-            stream = yield file.read_async (0, cancellable);
-            if (stream == null) {
-                error ("Could not read image file's size data");
-            } else {
-                var pixbuf = yield new Gdk.Pixbuf.from_stream_async (stream, cancellable);
-                goffile.width = pixbuf.get_width ();
-                goffile.height = pixbuf.get_height ();
-                resolution = goffile.width.to_string () + " × " + goffile.height.to_string () + " px";
-            }
-        } catch (Error e) {
-            warning ("Error loading image resolution in PropertiesWindow: %s", e.message);
-        }
-        try {
-            stream.close ();
-        } catch (GLib.Error e) {
-            debug ("Error closing stream in get_resolution: %s", e.message);
-        }
-
-        resolution_value.label = resolution;
     }
 
     private void construct_info_panel (GOF.File file) {
@@ -1195,30 +1177,6 @@ public class PropertiesWindow : AbstractPropertiesDialog {
                 critical ("Couldn't set as default: %s", e.message);
             }
         }
-    }
-
-    public static uint64 file_real_size (GOF.File gof) {
-        if (!gof.is_connected) {
-            return 0;
-        }
-
-        uint64 file_size = gof.size;
-        if (gof.location is GLib.File) {
-            try {
-                var info = gof.location.query_info (FileAttribute.STANDARD_ALLOCATED_SIZE, FileQueryInfoFlags.NONE);
-                uint64 allocated_size = info.get_attribute_uint64 (FileAttribute.STANDARD_ALLOCATED_SIZE);
-                /* Check for sparse file, allocated size will be smaller, for normal files allocated size
-                 * includes overhead size so we don't use it for those here
-                 */
-                if (allocated_size > 0 && allocated_size < file_size && !gof.is_directory) {
-                    file_size = allocated_size;
-                }
-            } catch (Error err) {
-                debug ("%s", err.message);
-                gof.is_connected = false;
-            }
-        }
-        return file_size;
     }
 
     private string get_contains_value (uint folders, uint files) {

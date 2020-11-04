@@ -21,16 +21,11 @@ namespace Marlin.View {
         const int IMAGE_LOADER_BUFFER_SIZE = 8192;
         const int STATUS_UPDATE_DELAY = 200;
         Cancellable? cancellable = null;
-        bool image_size_loaded = false;
         private uint folders_count = 0;
         private uint files_count = 0;
-//~         private uint64 folders_size = 0;
         private uint64 files_size = 0;
         private GOF.File? goffile = null;
         private GLib.List<unowned GOF.File>? selected_files = null;
-        private uint8 [] buffer;
-        private GLib.FileInputStream? stream;
-        private Gdk.PixbufLoader loader;
         private uint update_timeout_id = 0;
         private Marlin.DeepCount? deep_counter = null;
         private uint deep_count_timeout_id = 0;
@@ -55,7 +50,6 @@ namespace Marlin.View {
                 halign = valign
             };
 
-            buffer = new uint8[IMAGE_LOADER_BUFFER_SIZE];
             title_label = new Gtk.Label ("Title") {
                 halign = Gtk.Align.START
             };
@@ -156,12 +150,10 @@ namespace Marlin.View {
         }
 
        private void real_update (GLib.List<unowned GOF.File>? files) {
-warning ("real_update");
             goffile = null;
             title_label.label = "";
             folders_count = 0;
             files_count = 0;
-//~             folders_size = 0;
             files_size = 0;
 
             if (files != null && files.data != null) {
@@ -173,7 +165,6 @@ warning ("real_update");
         }
 
         private void update_status () {
-warning ("update status");
             title_label.label = "";
             type_label.label = "";
             folders_count_label.label = "";
@@ -183,7 +174,7 @@ warning ("update status");
             unreadable_count_label.label = "";
             image_resolution_label.label = "";
 
-warning ("files count %u, folders_count %u", files_count, folders_count);
+            /* Determine title and type fields */
             if (files_count + folders_count <= 1) { /* a single file is selected */
                 if (goffile.is_network_uri_scheme () || goffile.is_root_network_folder ()) {
                     title_label.label = goffile.get_display_target_uri ();
@@ -191,73 +182,33 @@ warning ("files count %u, folders_count %u", files_count, folders_count);
                     /* if we have an image, see if we can get its resolution */
                     string? ftype = goffile.get_ftype ();
 
-//~                     if (goffile.format_size == "" ) { /* No need to keep recalculating it */
-//~                         goffile.format_size = format_size (PropertiesWindow.file_real_size (goffile));
-//~                     }
-
                     title_label.label = goffile.info.get_name ();
                     type_label.label = goffile.formated_type;
-//~                     files_count_label.label = _("%u file").printf (1);
-//~                     files_size_label.label = goffile.format_size;
 
-//~                     str = "%s- %s (%s)".printf (goffile.info.get_name (),
-//~                                                 goffile.formated_type,
-//~                                                 goffile.format_size);
+                    if (ftype != null && ftype.substring (0, 6) == "image/") {
+                        image_resolution_label.label = _("Loading…");
+                        spinner.active = true;
+                        PF.FileUtils.load_image_resolution.begin (goffile,
+                                                                  null,
+                                                                  (obj, res) => {
+                            if (goffile.width <= 0) {
+                                image_resolution_label.label = _("Image size could not be determined");
+                            } else {
+                                image_resolution_label.label = _("%i x %i px").printf (goffile.width, goffile.height);
+                            }
 
-                    if (ftype != null && ftype.substring (0, 6) == "image/" &&     /* file is image and */
-                        (goffile.width > 0 ||                                    /* resolution already determined  or */
-                        !((ftype in Marlin.SKIP_IMAGES) || goffile.width < 0))) { /* resolution can be determined. */
-
-                        load_resolution.begin (goffile);
+                            spinner.active = false;
+                        });
                     }
-                } else {
-//~                     str = "%s - %s".printf (goffile.info.get_name (), goffile.formated_type);
+                } else { // Single folder selected
                     title_label.label = goffile.info.get_name ();
                     type_label.label = goffile.formated_type;
-//~                     folders_count_label.label = _("%u folder").printf (1);
-warning ("schedule deep count");
-//~                     schedule_deep_count ();
                 }
             } else { /* multiple selection */
-//~                 var fsize = format_size (files_size);
-                title_label.label = _("Multiple selection");
-//~                 size.label = format_size (files_size);
-//~                 if (folders_count > 1) {
-//~                     str = _("%u folders").printf (folders_count);
-//~                     folders_count_label.label = _("%u folders").printf (folders_count);
-//~                     if (files_count > 0) {
-//~                         str += ngettext (_(" and %u other item (%s) selected").printf (files_count, fsize),
-//~                                          _(" and %u other items (%s) selected").printf (files_count, fsize),
-//~                                          files_count);
-//~                         files_count_label.label = ngettext (_("%u file").printf (files_count),
-//~                                                             _("%u files").printf (files_count),
-//~                                                             files_count);
-//~                     }
-
-//~                     if (files_count > 0) {
-//~                         files_size_label.label = format_size (files_size);
-//~                     } else {
-//~                         files_size_label.label = "";
-//~                     }
-//~                 } else if (folders_count == 1) {
-//~                     str = _("%u folder").printf (folders_count);
-//~                     folders_count_label.label = _("%u folder").printf (folders_count);
-//~                     schedule_deep_count ();
-//~                         str += ngettext (_(" and %u other item (%s) selected").printf (files_count, fsize),
-//~                                          _(" and %u other items (%s) selected").printf (files_count, fsize),
-//~                                          files_count);
-//~                     files_count_label.label = ngettext (_("%u file").printf (files_count),
-//~                                                         _("%u files").printf (files_count),
-//~                                                         files_count);
-
-//~                     files_size_label.label = format_size (files_size);
-//~                 } else { /* folder_count = 0 and files_count > 1 */
-//~                     str = _("%u items selected (%s)").printf (files_count, fsize);
-//~                     files_count_label.label = _("%u files").printf (files_count);
-//~                     files_size_label.label = format_size (files_size);
-//~                 }
+                title_label.label = _("Selected %u folders, %u files").printf (folders_count, files_count);
             }
 
+            /* Determine count and size fields */
             if (folders_count > 0) {
                 folders_count_label.label = ngettext (_("%u folder").printf (folders_count),
                                                     _("%u folders").printf (folders_count),
@@ -270,10 +221,8 @@ warning ("schedule deep count");
 
                 files_size_label.label = format_size (files_size);
             }
-//~             return str;
         }
 
-        /* Deep counts are only done when a single folder is selected */
         private void schedule_deep_count () {
             cancel ();
             /* Show the spinner immediately to indicate that something will happen when selection stops changing */
@@ -281,15 +230,15 @@ warning ("schedule deep count");
             deep_count_cancel ();
 
             deep_count_timeout_id = GLib.Timeout.add_full (GLib.Priority.LOW, 1000, () => {
-                List<File> files = null;
+                List<File> folders = null;
                 foreach (GOF.File gof in selected_files) {
                     if (gof.is_folder ()) {
-                        files.prepend (gof.location.dup ());
+                        folders.prepend (gof.location.dup ());
                     }
                 }
 
-//~                 deep_counter = new Marlin.DeepCount (goffile.location);
-                deep_counter = new Marlin.DeepCount (files);
+                /* Marlin.DeepCount now deep counts multiple directories */
+                deep_counter = new Marlin.DeepCount (folders);
                 deep_counter.finished.connect (update_status_after_deep_count);
 
                 cancel_cancellable ();
@@ -301,6 +250,7 @@ warning ("schedule deep count");
                         deep_counter = null;
                         cancellable = null;
                     }
+
                     spinner.active = false;
                 });
 
@@ -314,14 +264,10 @@ warning ("schedule deep count");
             cancellable = null;
             spinner.active = false;
 
-//~             title_label.label = "%s - %s (".printf (goffile.info.get_name (), goffile.formated_type);
-//~             title_label.label = goffile.info.get_name ();
-
             if (deep_counter != null) {
                 if (deep_counter.dirs_count > 0) {
                     /// TRANSLATORS: %u will be substituted by the number of sub folders
                     str = ngettext (_("%u sub-folder"), _("%u sub-folders"), deep_counter.dirs_count);
-warning ("str %s", str);
                     subfolders_count_label.label = str.printf (deep_counter.dirs_count);
                 }
 
@@ -333,7 +279,6 @@ warning ("str %s", str);
 
                 if (deep_counter.file_not_read == 0) {
                     files_size_label.label = format_size (deep_counter.total_size + files_size);
-//~                     size.label += ")";
                 } else {
                     if (deep_counter.total_size > 0) {
                         /// TRANSLATORS: %s will be substituted by the approximate disk space used by the folder
@@ -342,8 +287,6 @@ warning ("str %s", str);
                         /// TRANSLATORS: 'size' refers to disk space
                         files_size_label.label += _("unknown size");
                     }
-
-//~                     title_label.label += ") ";
                     /// TRANSLATORS: %u will be substituted by the number of unreadable files
                     str = ngettext (_("%u file not readable"), _("%u files not readable"), deep_counter.file_not_read);
                     unreadable_count_label.label = str.printf (deep_counter.file_not_read);
@@ -351,9 +294,9 @@ warning ("str %s", str);
             }
         }
 
-        /* Count the number of folders and number of files selected as well as the total size of selected files */
+        /* Count the number of folders and number of regular files selected as well as
+         * the total size of selected regular files */
         private void scan_list (GLib.List<unowned GOF.File>? files) {
-warning ("SCAN LIST");
             if (files == null) {
                 return;
             }
@@ -365,93 +308,10 @@ warning ("SCAN LIST");
                         goffile = gof;
                     } else {
                         files_count++;
-                        files_size += PropertiesWindow.file_real_size (gof);
+                        files_size += PF.FileUtils.file_real_size (gof);
                     }
                 } else {
                     warning ("Null file found in OverlayBar scan_list - this should not happen");
-                }
-            }
-        }
-
-        /* code is mostly ported from nautilus' src/nautilus-image-properties.c */
-        private async void load_resolution (GOF.File goffile) {
-            if (goffile.width > 0) { /* resolution may already have been determined */
-                on_size_prepared (goffile.width, goffile.height);
-                return;
-            }
-
-            var file = goffile.location;
-            image_size_loaded = false;
-
-            try {
-                stream = yield file.read_async (0, cancellable);
-                if (stream == null) {
-                    error ("Could not read image file's size data");
-                }
-
-                loader = new Gdk.PixbufLoader.with_mime_type (goffile.get_ftype ());
-                loader.size_prepared.connect (on_size_prepared);
-
-                cancel_cancellable ();
-                cancellable = new Cancellable ();
-
-                yield read_image_stream (loader, stream, cancellable);
-            } catch (Error e) {
-                warning ("Error loading image resolution in OverlayBar: %s", e.message);
-            }
-            /* Gdk wants us to always close the loader, so we are nice to it */
-            try {
-                stream.close ();
-            } catch (GLib.Error e) {
-                debug ("Error closing stream in load resolution: %s", e.message);
-            }
-            try {
-                loader.close ();
-            } catch (GLib.Error e) { /* Errors expected because may not load whole image */
-                debug ("Error closing loader in load resolution: %s", e.message);
-            }
-            cancellable = null;
-        }
-
-        private void on_size_prepared (int width, int height) {
-            if (goffile == null) { /* This can occur during rapid rubberband selection */
-                return;
-            }
-            image_size_loaded = true;
-            goffile.width = width;
-            goffile.height = height;
-            title_label.label = "%s (%s — %i × %i)".printf (goffile.formated_type, goffile.format_size, width, height);
-        }
-
-        private async void read_image_stream (Gdk.PixbufLoader loader, FileInputStream stream,
-                                              Cancellable cancellable) {
-            ssize_t read = 1;
-            uint count = 0;
-            while (!image_size_loaded && read > 0 && !cancellable.is_cancelled ()) {
-                try {
-                    read = yield stream.read_async (buffer, 0, cancellable);
-                    count++;
-                    if (count > 100) {
-                        goffile.width = -1; /* Flag that resolution is not determinable so do not try again*/
-                        goffile.height = -1;
-                        /* Note that Gdk.PixbufLoader seems to leak memory with some file types. Any file type that
-                         * causes this error should be added to Marlin.SKIP_IMAGES array */
-                        critical ("Could not determine resolution of file type %s", goffile.get_ftype ());
-                        break;
-                    }
-
-                    loader.write (buffer);
-
-                } catch (IOError e) {
-                    if (!(e is IOError.CANCELLED)) {
-                        warning (e.message);
-                    }
-                } catch (Gdk.PixbufError e) {
-                    /* errors while loading are expected, we only need to know the size */
-                } catch (FileError e) {
-                    warning (e.message);
-                } catch (Error e) {
-                    warning (e.message);
                 }
             }
         }
