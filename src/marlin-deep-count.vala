@@ -37,7 +37,6 @@ public class Marlin.DeepCount : Object {
     }
 
     public DeepCount (List<File> _files) {
-//~         file = _file;
         foreach (File file in _files) {
             files.prepend (file);
         }

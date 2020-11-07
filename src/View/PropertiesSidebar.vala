@@ -40,6 +40,7 @@ namespace Marlin.View {
         private Gtk.Spinner spinner;
 
         construct {
+            margin = 6;
             hexpand = true;
             column_spacing = 6;
             row_spacing = 6;
@@ -117,12 +118,11 @@ namespace Marlin.View {
             selected_files = null;
         }
 
-
-        /** Function to be called when view is going to be destroyed or going to show another folder
- *        * and on a selection change.
-*         **/
         public void cancel () {
-            deep_count_cancel ();
+            if (deep_count_timeout_id > 0) {
+                GLib.Source.remove (deep_count_timeout_id);
+                deep_count_timeout_id = 0;
+            }
 
             if (update_timeout_id > 0) {
                 GLib.Source.remove (update_timeout_id);
@@ -131,14 +131,6 @@ namespace Marlin.View {
 
             cancel_cancellable ();
             spinner.active = false;
-        }
-
-        private void deep_count_cancel () {
-            /* Do not cancel updating of selected files when hovered file changes */
-            if (deep_count_timeout_id > 0) {
-                GLib.Source.remove (deep_count_timeout_id);
-                deep_count_timeout_id = 0;
-            }
         }
 
         private void cancel_cancellable () {
@@ -188,8 +180,10 @@ namespace Marlin.View {
                     if (ftype != null && ftype.substring (0, 6) == "image/") {
                         image_resolution_label.label = _("Loading…");
                         spinner.active = true;
+                        cancellable = new Cancellable ();
+
                         PF.FileUtils.load_image_resolution.begin (goffile,
-                                                                  null,
+                                                                  cancellable,
                                                                   (obj, res) => {
                             if (goffile.width <= 0) {
                                 image_resolution_label.label = _("Image size could not be determined");
@@ -198,6 +192,7 @@ namespace Marlin.View {
                             }
 
                             spinner.active = false;
+                            cancellable = null;
                         });
                     }
                 } else { // Single folder selected
@@ -227,7 +222,6 @@ namespace Marlin.View {
             cancel ();
             /* Show the spinner immediately to indicate that something will happen when selection stops changing */
             spinner.active = true;
-            deep_count_cancel ();
 
             deep_count_timeout_id = GLib.Timeout.add_full (GLib.Priority.LOW, 1000, () => {
                 List<File> folders = null;
