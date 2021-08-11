@@ -190,6 +190,7 @@ namespace Files.View {
 
             top_menu.forward.connect ((steps) => { current_tab.go_forward (steps); });
             top_menu.back.connect ((steps) => { current_tab.go_back (steps); });
+            top_menu.up.connect((steps) => { current_tab.go_up (); });
             top_menu.escape.connect (grab_focus);
             top_menu.path_change_request.connect ((loc, flag) => {
                 current_tab.is_frozen = false;
@@ -1091,6 +1092,7 @@ namespace Files.View {
             top_menu.set_back_menu (current_tab.get_go_back_path_list ());
             top_menu.set_forward_menu (current_tab.get_go_forward_path_list ());
             top_menu.can_go_back = current_tab.can_go_back;
+            top_menu.can_go_up = current_tab.can_go_up;
             top_menu.can_go_forward = (current_tab.can_show_folder && current_tab.can_go_forward);
             top_menu.working = current_tab.is_loading;
 

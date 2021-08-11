@@ -104,6 +104,10 @@ namespace Files.View {
             }
         }
 
+        public bool get_can_go_up (){
+            return (current_uri != "file:///" && current_uri != "recent:///" && current_uri !="trash:///");
+        }
+
         public bool get_can_go_back () {
             return !back_stack.is_empty ();
         }

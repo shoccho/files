@@ -86,6 +86,12 @@ namespace Files.View {
             }
         }
 
+        public bool can_go_up {
+            get {
+                return browser.get_can_go_up ();
+            }
+        }
+
         public bool can_go_forward {
             get {
                 return browser.get_can_go_forward ();

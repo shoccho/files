@@ -24,6 +24,7 @@
 public class Files.View.Chrome.HeaderBar : Hdy.HeaderBar {
     public signal void forward (int steps);
     public signal void back (int steps); /* TODO combine using negative step */
+    public signal void up (); 
     public signal void focus_location_request (GLib.File? location);
     public signal void path_change_request (string path, Files.OpenFlag flag);
     public signal void escape ();
@@ -43,6 +44,12 @@ public class Files.View.Chrome.HeaderBar : Hdy.HeaderBar {
             button_back.sensitive = value;
         }
     }
+    public bool can_go_up {
+       set {
+            button_up.sensitive = value;
+        }
+    }
+
 
     public bool can_go_forward {
        set {
@@ -53,6 +60,7 @@ public class Files.View.Chrome.HeaderBar : Hdy.HeaderBar {
     private LocationBar? location_bar;
     private Chrome.ButtonWithMenu button_forward;
     private Chrome.ButtonWithMenu button_back;
+    private Chrome.ButtonWithMenu button_up;
 
     public HeaderBar (ViewSwitcher switcher) {
         Object (view_switcher: switcher);
@@ -65,6 +73,13 @@ public class Files.View.Chrome.HeaderBar : Hdy.HeaderBar {
 
         button_back.tooltip_markup = Granite.markup_accel_tooltip ({"<Alt>Left"}, _("Previous"));
         button_back.get_style_context ().add_class (Gtk.STYLE_CLASS_FLAT);
+
+        button_up = new View.Chrome.ButtonWithMenu.from_icon_name (
+            "go-up-symbolic", Gtk.IconSize.LARGE_TOOLBAR
+        );
+
+        button_up.tooltip_markup = Granite.markup_accel_tooltip ({"<Alt>Up"}, _("Up"));
+        button_up.get_style_context ().add_class (Gtk.STYLE_CLASS_FLAT);
 
         button_forward = new View.Chrome.ButtonWithMenu.from_icon_name (
             "go-next-symbolic", Gtk.IconSize.LARGE_TOOLBAR
@@ -79,6 +94,7 @@ public class Files.View.Chrome.HeaderBar : Hdy.HeaderBar {
 
         pack_start (button_back);
         pack_start (button_forward);
+        pack_start (button_up);
         pack_start (view_switcher);
         pack_start (location_bar);
         show_all ();
@@ -89,6 +105,9 @@ public class Files.View.Chrome.HeaderBar : Hdy.HeaderBar {
 
         button_back.slow_press.connect (() => {
             back (1);
+        });
+        button_up.slow_press.connect (() => {
+            up ();
         });
 
         location_bar.reload_request.connect (() => {
@@ -144,6 +163,12 @@ public class Files.View.Chrome.HeaderBar : Hdy.HeaderBar {
 
         back_menu.show_all ();
         button_back.menu = back_menu;
+    }
+    public void set_up_menu(Gee.List<string> path_list){
+              /* I have no idea  what to do here */
+        var up_menu = new Gtk.Menu ();
+        up_menu.show_all ();
+        button_up.menu = up_menu;
     }
 
     public void set_forward_menu (Gee.List<string> path_list) {
